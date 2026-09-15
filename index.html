@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ムスビ</title>
+  <style>
+:root{
+  --bg:#f7f5f0;
+  --surface:#ffffff;
+  --ink:#242320;
+  --ink-soft:#615d52;
+  --ink-faint:#948d7d;
+  --line:#e3ddd0;
+  --idea:#a9691f;
+  --idea-soft:#f7ecdd;
+  --tech:#1f6f5c;
+  --tech-soft:#e6f2ee;
+  --cta:#2c4a63;
+  --cta-soft:#e8eef2;
+  --chip:#efece3;
+  --phone-bg:#fbfaf7;
+  --shadow: 0 24px 48px -20px rgba(36,35,32,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1a17; --surface:#242320; --ink:#eeece5; --ink-soft:#a9a396; --ink-faint:#726c5f;
+    --line:#3a382f; --idea:#d99a4f; --idea-soft:#332a1c; --tech:#5cbaa2; --tech-soft:#1b2f29;
+    --cta:#7fa8c9; --cta-soft:#28333c; --chip:#2c2a24; --phone-bg:#201f1c;
+    --shadow: 0 24px 48px -20px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1a17; --surface:#242320; --ink:#eeece5; --ink-soft:#a9a396; --ink-faint:#726c5f;
+  --line:#3a382f; --idea:#d99a4f; --idea-soft:#332a1c; --tech:#5cbaa2; --tech-soft:#1b2f29;
+  --cta:#7fa8c9; --cta-soft:#28333c; --chip:#2c2a24; --phone-bg:#201f1c;
+  --shadow: 0 24px 48px -20px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans JP","IBM Plex Sans",-apple-system,sans-serif;
+  padding:0 20px;
+}
+h1,h2,h3{font-family:"Source Serif 4","Noto Serif JP",serif; text-wrap:balance; margin:0;}
+
+.page{max-width:960px;margin:0 auto;padding-block:40px 64px;display:flex;flex-direction:column;gap:28px;}
+header.top{display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line);padding-bottom:24px;}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--cta);}
+h1{font-size:26px;}
+.lede{color:var(--ink-soft);font-size:14.5px;max-width:60ch;}
+
+.switcher{display:flex;gap:6px;flex-wrap:wrap;}
+.switcher button{
+  font:inherit;font-size:13px;font-family:"IBM Plex Sans JP",sans-serif;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);
+  padding:8px 14px;border-radius:100px;cursor:pointer;white-space:nowrap;
+}
+.switcher button.active{background:var(--cta);border-color:var(--cta);color:var(--phone-bg);font-weight:600;}
+.switcher button:hover:not(.active){border-color:var(--ink-faint);color:var(--ink);}
+
+.stage{display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap;}
+
+.device{
+  width:360px;max-width:100%;flex-shrink:0;
+  background:var(--phone-bg);
+  border:1px solid var(--line);
+  border-radius:32px;
+  box-shadow:var(--shadow);
+  padding:14px 10px 0;
+  display:flex;flex-direction:column;
+  height:680px;
+  position:relative;
+  margin-inline:auto;
+}
+.statusbar{
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-faint);
+  padding:2px 10px 10px;
+}
+.screen{
+  flex:1;background:var(--surface);border-radius:20px 20px 0 0;
+  overflow:hidden;display:flex;flex-direction:column;position:relative;
+}
+.panel{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.panel.active{display:flex;}
+
+/* ---- shared bits ---- */
+.appbar{
+  padding:16px 18px 10px;border-bottom:1px solid var(--line);
+  display:flex;flex-direction:column;gap:10px;flex-shrink:0;
+}
+.appname{font-family:"Source Serif 4",serif;font-size:19px;font-weight:600;}
+.tabs{display:flex;gap:6px;}
+.tab{
+  flex:1;text-align:center;padding:8px 0;border-radius:10px;font-size:13px;font-weight:600;
+  cursor:pointer;border:1px solid transparent;color:var(--ink-soft);
+}
+.tab[data-lane="idea"].tab-active{background:var(--idea-soft);color:var(--idea);}
+.tab[data-lane="tech"].tab-active{background:var(--tech-soft);color:var(--tech);}
+
+.scroll{flex:1;overflow-y:auto;padding:12px 14px 16px;display:flex;flex-direction:column;gap:10px;}
+
+.card{
+  display:flex;gap:12px;align-items:flex-start;background:var(--surface);
+  border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;text-align:left;
+  font:inherit;color:inherit;width:100%;
+}
+.card:hover{border-color:var(--ink-faint);}
+.avatar{
+  width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:"IBM Plex Mono",monospace;font-size:14px;font-weight:600;color:#fff;
+}
+.lane-idea .avatar{background:var(--idea);}
+.lane-tech .avatar{background:var(--tech);}
+.card-body{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.card-title{font-size:14px;font-weight:600;}
+.card-desc{font-size:12.5px;color:var(--ink-soft);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.card-meta{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-faint);margin-top:2px;}
+
+.bottomnav{
+  display:flex;border-top:1px solid var(--line);flex-shrink:0;background:var(--surface);
+}
+.navbtn{
+  flex:1;text-align:center;padding:10px 0 8px;font-size:10.5px;color:var(--ink-faint);
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:"IBM Plex Sans JP",sans-serif;
+}
+.navbtn .dot{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;}
+.navbtn.active{color:var(--ink);font-weight:600;}
+.navbtn.active .dot{background:var(--cta-soft);color:var(--cta);}
+
+/* ---- detail screen ---- */
+.detail-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-shrink:0;}
+.backbtn{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);cursor:pointer;background:none;border:none;padding:4px;}
+.detail-scroll{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:16px;}
+.lane-badge{
+  align-self:flex-start;font-family:"IBM Plex Mono",monospace;font-size:11px;padding:4px 10px;border-radius:100px;
+}
+.lane-badge.idea{background:var(--idea-soft);color:var(--idea);}
+.lane-badge.tech{background:var(--tech-soft);color:var(--tech);}
+.detail-block dt{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);font-family:"IBM Plex Mono",monospace;margin-bottom:4px;}
+.detail-block dd{margin:0;font-size:14px;line-height:1.7;}
+.detail-block{margin-bottom:14px;}
+.cta-btn{
+  margin-top:auto;background:var(--cta);color:var(--phone-bg);border:none;border-radius:12px;
+  padding:13px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0;
+}
+.cta-btn:hover{opacity:.92;}
+
+/* ---- chat ---- */
+.chat-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-shrink:0;}
+.chat-scroll{flex:1;overflow-y:auto;padding:14px 14px;display:flex;flex-direction:column;gap:8px;}
+.bubble{max-width:78%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;}
+.bubble.them{align-self:flex-start;background:var(--chip);border-bottom-left-radius:4px;}
+.bubble.me{align-self:flex-end;background:var(--cta-soft);color:var(--ink);border-bottom-right-radius:4px;}
+.chat-input{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);flex-shrink:0;}
+.chat-input input{
+  flex:1;border:1px solid var(--line);border-radius:100px;padding:9px 14px;font:inherit;font-size:13px;
+  background:var(--surface);color:var(--ink);
+}
+.chat-input button{
+  background:var(--cta);color:var(--phone-bg);border:none;border-radius:100px;padding:0 16px;font-size:13px;font-weight:600;cursor:pointer;
+}
+
+/* ---- profile ---- */
+.profile-scroll{flex:1;overflow-y:auto;padding:16px 18px 18px;display:flex;flex-direction:column;gap:14px;}
+.field label{display:block;font-size:11px;font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-faint);margin-bottom:5px;}
+.field textarea, .field input{
+  width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:inherit;font-size:13.5px;
+  background:var(--surface);color:var(--ink);resize:none;
+}
+.save-btn{background:var(--cta);color:var(--phone-bg);border:none;border-radius:12px;padding:12px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:4px;}
+
+/* ---- info panel beside phone ---- */
+.info{
+  flex:1;min-width:260px;display:flex;flex-direction:column;gap:14px;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px;
+}
+.info h2{font-size:17px;}
+.info dl{display:flex;flex-direction:column;gap:12px;margin:0;}
+.info dt{font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);}
+.info dd{margin:2px 0 0;font-size:13.5px;color:var(--ink-soft);line-height:1.6;}
+
+@media (max-width:480px){
+  .device{height:620px;}
+}
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+JP:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="page">
+  <header class="top">
+    <span class="eyebrow">Prototype · Screen Flow</span>
+    <h1>ムスビ ── アイデア×技術 マッチングアプリ</h1>
+    <p class="lede">アイデアを持つ人と技術を持つ人が、お互いの領域から相手を探し、その場でつながれるプロトタイプです。</p>
+  </header>
+
+  <div class="switcher" id="switcher">
+    <button data-screen="home">①一覧</button>
+    <button data-screen="detail">②詳細</button>
+    <button data-screen="chat">③チャット</button>
+    <button data-screen="profile">④プロフィール登録</button>
+  </div>
+
+  <div class="stage">
+    <div class="device">
+      <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+      <div class="screen">
+
+        <!-- ① HOME -->
+        <div class="panel active" data-panel="home">
+          <div class="appbar">
+            <div class="appname">ムスビ</div>
+            <div class="tabs">
+              <div class="tab tab-active" data-lane="idea" id="tabIdea">アイデア</div>
+              <div class="tab" data-lane="tech" id="tabTech">技術</div>
+            </div>
+          </div>
+          <div class="scroll" id="cardList"></div>
+          <div class="bottomnav">
+            <div class="navbtn active" data-nav="home"><span class="dot">◎</span>ホーム</div>
+            <div class="navbtn" data-nav="chat"><span class="dot">✉</span>チャット</div>
+            <div class="navbtn" data-nav="profile"><span class="dot">◇</span>マイページ</div>
+          </div>
+        </div>
+
+        <!-- ② DETAIL -->
+        <div class="panel" data-panel="detail">
+          <div class="detail-head">
+            <button class="backbtn" data-back="home">← 戻る</button>
+          </div>
+          <div class="detail-scroll" id="detailBody"></div>
+        </div>
+
+        <!-- ③ CHAT -->
+        <div class="panel" data-panel="chat">
+          <div class="chat-head">
+            <button class="backbtn" data-back="home">←</button>
+            <div>
+              <div style="font-size:14px;font-weight:600;" id="chatName">ユーザーさん</div>
+              <div style="font-size:11px;color:var(--ink-faint);">オンライン</div>
+            </div>
+          </div>
+          <div class="chat-scroll" id="chatScroll"></div>
+          <div class="chat-input">
+            <input id="chatInput" type="text" placeholder="メッセージを入力">
+            <button id="chatSend">送信</button>
+          </div>
+        </div>
+
+        <!-- ④ PROFILE -->
+        <div class="panel" data-panel="profile">
+          <div class="appbar">
+            <div class="appname">プロフィール登録</div>
+            <div class="tabs">
+              <div class="tab tab-active" data-plane="idea" id="planeIdea">アイデア枠</div>
+              <div class="tab" data-plane="tech" id="planeTech">技術枠</div>
+            </div>
+          </div>
+          <div class="profile-scroll" id="profileForm"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="info" id="infoPanel"></div>
+  </div>
+</div>
+
+<script type="module">
+  // 1. Firebaseの基本機能をインポート (Analyticsはエラーになるため削除)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+  // 2. Realtime Databaseを操作するための機能をインポート
+  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+
+  // あなたのFirebaseプロジェクト設定
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgjBb7jgLQLHfcgDSl2UwT549Kfz7F8Nk",
+    authDomain: "wordgame-dev-4d3a0.firebaseapp.com",
+    databaseURL: "https://wordgame-dev-4d3a0-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "wordgame-dev-4d3a0",
+    storageBucket: "wordgame-dev-4d3a0.firebasestorage.app",
+    messagingSenderId: "349718679870",
+    appId: "1:349718679870:web:a01d65cc5bf832fb531c6f",
+    measurementId: "G-CLG036X0PF"
+  };
+
+  // 3. Firebaseの初期化 (Analyticsの初期化を削除)
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // ==========================================
+  // ここから下はアプリの動作ロジック（そのままいじらなくてOKです）
+  // ==========================================
+  
+  // データを保持する変数
+  let IDEAS = [];
+  let TECHS = [];
+  
+  let currentLane = 'idea';
+  let currentPlane = 'idea';
+  let lastDetail = null;
+
+  // Realtime Databaseの監視処理
+  onValue(ref(db, 'musubi/ideas'), (snapshot) => {
+    IDEAS = [];
+    snapshot.forEach((childSnapshot) => {
+      IDEAS.push({ id: childSnapshot.key, lane: 'idea', ...childSnapshot.val() });
+    });
+    if (currentLane === 'idea') renderCards();
+  });
+
+  onValue(ref(db, 'musubi/techs'), (snapshot) => {
+    TECHS = [];
+    snapshot.forEach((childSnapshot) => {
+      TECHS.push({ id: childSnapshot.key, lane: 'tech', ...childSnapshot.val() });
+    });
+    if (currentLane === 'tech') renderCards();
+  });
+
+
+  const INFO = {
+    home:{name:'①ホーム（一覧）画面', purpose:'アイデア枠・技術枠を横断的に見渡し、自分と反対の領域からマッチ候補を探させる。',
+          content:'「アイデア」「技術」の2タブ。Firebaseから取得したデータを表示します。', actions:'タブを切り替えて閲覧し、気になるカードをタップして詳細画面へ。'},
+    detail:{name:'②詳細画面', purpose:'本当にマッチするかどうかを判断してもらう。',
+            content:'アイデア枠：作りたいものの詳細＋アプリ内実績／技術枠：得意領域の詳細＋アプリ内実績。', actions:'マッチすると思ったら、その場でチャットを送る。'},
+    chat:{name:'③チャット画面', purpose:'マッチした相手とやりとりを始める。（※現在はダミーのモックです）',
+          content:'DM形式のメッセージ履歴。', actions:'メッセージの送受信。'},
+    profile:{name:'④プロフィール登録画面', purpose:'Firebase Databaseへ新規データを登録します。',
+             content:'名前やタイトル、詳細を入力するフォーム。', actions:'情報を入力してデータベースに登録する。'},
+  };
+
+  function renderInfo(screen){
+    const d = INFO[screen];
+    document.getElementById('infoPanel').innerHTML = `
+      <h2>${d.name}</h2>
+      <dl>
+        <div><dt>目的</dt><dd>${d.purpose}</dd></div>
+        <div><dt>表示する内容</dt><dd>${d.content}</dd></div>
+        <div><dt>ユーザーができること</dt><dd>${d.actions}</dd></div>
+      </dl>`;
+  }
+
+  function showScreen(name){
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+    document.querySelectorAll('.switcher button').forEach(b => b.classList.toggle('active', b.dataset.screen === name));
+    document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
+    renderInfo(name);
+  }
+
+  // 取得したFirebaseのデータでリストを描画
+  function renderCards(){
+    const list = currentLane === 'idea' ? IDEAS : TECHS;
+    
+    if (list.length === 0) {
+      document.getElementById('cardList').innerHTML = `<div style="text-align:center;color:var(--ink-faint);margin-top:20px;font-size:13px;">まだ投稿がありません。マイページから登録してください。</div>`;
+      return;
+    }
+    
+    document.getElementById('cardList').innerHTML = list.map(item => `
+      <button class="card lane-${item.lane}" data-id="${item.id}">
+        <div class="avatar">${item.initial || '?'}</div>
+        <div class="card-body">
+          <div class="card-title">${item.title}</div>
+          <div class="card-desc">${item.summary}</div>
+          <div class="card-meta">${item.name} ・ ${item.achievement.replace('実績：','')}</div>
+        </div>
+      </button>`).join('');
+      
+    document.querySelectorAll('#cardList .card').forEach(c => c.addEventListener('click', () => openDetail(c.dataset.id)));
+  }
+
+  function openDetail(id){
+    const item = [...IDEAS, ...TECHS].find(x => x.id === id);
+    if(!item) return;
+    
+    lastDetail = item;
+    const laneLabel = item.lane === 'idea' ? 'アイデア枠' : '技術枠';
+    document.getElementById('detailBody').innerHTML = `
+      <span class="lane-badge ${item.lane}">${laneLabel}</span>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div class="avatar" style="width:48px;height:48px;font-size:16px;">${item.initial || '?'}</div>
+        <div>
+          <div style="font-size:17px;font-weight:600;">${item.title}</div>
+          <div style="font-size:12.5px;color:var(--ink-soft);">${item.name}</div>
+        </div>
+      </div>
+      <dl class="detail-block">
+        <dt>${item.lane === 'idea' ? 'ざっくりしたアイデア' : '得意領域'}</dt>
+        <dd>${item.summary}</dd>
+      </dl>
+      <dl class="detail-block">
+        <dt>${item.lane === 'idea' ? '作りたいもの' : '使用できる技術領域'}</dt>
+        <dd>${item.detail}</dd>
+      </dl>
+      <dl class="detail-block">
+        <dt>アプリ内実績</dt>
+        <dd>${item.achievement}</dd>
+      </dl>
+      <button class="cta-btn" id="toChatBtn">この人にチャットを送る</button>`;
+    document.getElementById('toChatBtn').addEventListener('click', () => openChat(item));
+    showScreen('detail');
+  }
+
+  function openChat(item){
+    document.getElementById('chatName').textContent = item ? item.name : 'ユーザーさん';
+    const seed = item && item.lane === 'tech'
+      ? [['them', `はじめまして。${item.title}、面白そうです。力になれそうです。`], ['me', 'ありがとうございます！一度オンラインでお話しできますか？']]
+      : [['them', 'はじめまして！このアイデア、実装してみたいです。'], ['me', '嬉しいです！まずは今考えているものを詳しくお話しさせてください。']];
+    document.getElementById('chatScroll').innerHTML = seed.map(([who, text]) =>
+      `<div class="bubble ${who}">${text}</div>`).join('');
+    showScreen('chat');
+  }
+
+  document.getElementById('chatSend').addEventListener('click', sendChat);
+  document.getElementById('chatInput').addEventListener('keydown', e => { if(e.key === 'Enter') sendChat(); });
+  function sendChat(){
+    const input = document.getElementById('chatInput');
+    if(!input.value.trim()) return;
+    const div = document.createElement('div');
+    div.className = 'bubble me';
+    div.textContent = input.value.trim();
+    document.getElementById('chatScroll').appendChild(div);
+    input.value = '';
+    document.getElementById('chatScroll').scrollTop = 999999;
+  }
+
+  // データをDBに登録できるフォームを描画
+  function renderProfileForm(){
+    if(currentPlane === 'idea'){
+      document.getElementById('profileForm').innerHTML = `
+        <div class="field"><label>お名前</label><input id="pf-name" placeholder="例: 佐藤さん"></div>
+        <div class="field"><label>プロジェクト名 / タイトル</label><input id="pf-title" placeholder="例: サステナブル文具プロジェクト"></div>
+        <div class="field"><label>ざっくりしたアイデア</label>
+          <textarea id="pf-summary" rows="2" placeholder="例: 使い切ったら植物になる、サステナブルな鉛筆"></textarea></div>
+        <div class="field"><label>作りたいもの（詳しく）</label>
+          <textarea id="pf-detail" rows="3" placeholder="まずは小ロットで試作し、学内販売から始めたい。"></textarea></div>
+        <div class="field"><label>アプリ内実績</label><input id="pf-achievement" value="まだありません（初めての投稿です）"></div>
+        <button class="save-btn" id="saveProfileBtn">この内容で登録する</button>`;
+    } else {
+      document.getElementById('profileForm').innerHTML = `
+        <div class="field"><label>お名前</label><input id="pf-name" placeholder="例: 鈴木さん"></div>
+        <div class="field"><label>できる役割 / タイトル</label><input id="pf-title" placeholder="例: フロントエンド開発"></div>
+        <div class="field"><label>得意領域</label>
+          <textarea id="pf-summary" rows="2" placeholder="例: React / Next.js でのアプリ開発が得意"></textarea></div>
+        <div class="field"><label>使用できる技術領域</label>
+          <textarea id="pf-detail" rows="2" placeholder="例: React, TypeScript, Figma"></textarea></div>
+        <div class="field"><label>アプリ内実績</label><input id="pf-achievement" value="まだありません（初めての投稿です）"></div>
+        <button class="save-btn" id="saveProfileBtn">この内容で登録する</button>`;
+    }
+    
+    // DBへの送信処理
+    document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+      const name = document.getElementById('pf-name').value;
+      const title = document.getElementById('pf-title').value;
+      const summary = document.getElementById('pf-summary').value;
+      const detail = document.getElementById('pf-detail').value;
+      const achievement = document.getElementById('pf-achievement').value;
+      
+      if(!name || !title || !summary) {
+        alert("名前、タイトル、概要は入力必須です。");
+        return;
+      }
+
+      // 名前から頭文字(Initial)を生成
+      const data = {
+        name: name,
+        initial: name.charAt(0).toUpperCase(),
+        title: title,
+        summary: summary,
+        detail: detail,
+        achievement: achievement,
+        timestamp: Date.now()
+      };
+
+      try {
+        if(currentPlane === 'idea') {
+          await push(ref(db, 'musubi/ideas'), data);
+        } else {
+          await push(ref(db, 'musubi/techs'), data);
+        }
+        alert('データをFirebaseに登録しました！');
+        
+        // 入力フォームを空にする
+        document.getElementById('pf-name').value = '';
+        document.getElementById('pf-title').value = '';
+        document.getElementById('pf-summary').value = '';
+        document.getElementById('pf-detail').value = '';
+
+        showScreen('home'); // 一覧に戻る
+      } catch (error) {
+        console.error("Firebaseへの保存に失敗しました", error);
+        alert('エラーが発生しました。コンソールを確認してください。');
+      }
+    });
+  }
+
+  // イベントリスナーの設定
+  document.getElementById('tabIdea').addEventListener('click', () => { currentLane='idea'; document.getElementById('tabIdea').classList.add('tab-active'); document.getElementById('tabTech').classList.remove('tab-active'); renderCards(); });
+  document.getElementById('tabTech').addEventListener('click', () => { currentLane='tech'; document.getElementById('tabTech').classList.add('tab-active'); document.getElementById('tabIdea').classList.remove('tab-active'); renderCards(); });
+  document.getElementById('planeIdea').addEventListener('click', () => { currentPlane='idea'; document.getElementById('planeIdea').classList.add('tab-active'); document.getElementById('planeTech').classList.remove('tab-active'); renderProfileForm(); });
+  document.getElementById('planeTech').addEventListener('click', () => { currentPlane='tech'; document.getElementById('planeTech').classList.add('tab-active'); document.getElementById('planeIdea').classList.remove('tab-active'); renderProfileForm(); });
+
+  document.querySelectorAll('.switcher button').forEach(b => b.addEventListener('click', () => {
+    if(b.dataset.screen === 'detail' && !lastDetail) {
+      alert("まずはホーム画面からカードを選択してください。");
+    } else if(b.dataset.screen === 'chat') {
+      openChat(lastDetail);
+    } else {
+      showScreen(b.dataset.screen);
+    }
+  }));
+  document.querySelectorAll('.navbtn').forEach(b => b.addEventListener('click', () => {
+    if(b.dataset.nav === 'chat') openChat(lastDetail);
+    else showScreen(b.dataset.nav);
+  }));
+  document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => showScreen(b.dataset.back)));
+
+  renderCards();
+  renderProfileForm();
+  renderInfo('home');
+</script>
