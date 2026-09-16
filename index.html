@@ -241,9 +241,7 @@ body{
         <div class="tab" data-plane="tech" id="planeTech">技術枠</div>
       </div>
     </div>
-    <div class="profile-scroll" id="postFormArea">
-      <!-- ここにアイデア入力フォームが表示されます -->
-    </div>
+    <div class="profile-scroll" id="postFormArea"></div>
   </div>
 
   <!-- ⑥ MYPAGE (プロフィール設定画面) -->
@@ -256,7 +254,6 @@ body{
         <div class="avatar" style="width:72px; height:72px; font-size:28px; margin:0 auto 10px; background:var(--chip); color:var(--ink-soft);" id="myAvatarDisplay">👤</div>
         <div style="font-size:12.5px; color:var(--ink-soft); line-height:1.5;">ここで設定したお名前や実績が、<br>あなたの投稿に自動で紐づけられます。</div>
       </div>
-      <!-- マイページは「自分の基本情報」だけにスッキリさせました -->
       <div class="field"><label>お名前</label><input id="my-name" placeholder="例: 佐藤さん"></div>
       <div class="field"><label>実績・経歴など</label><textarea id="my-achievement" rows="2" placeholder="例: ハッカソン出場経験あり / 未経験・アイデアのみ"></textarea></div>
       <button class="save-btn" id="saveMyProfileBtn">プロフィールを保存</button>
@@ -297,6 +294,7 @@ body{
   let IDEAS = [];
   let TECHS = [];
   let CHATS = {}; 
+  let USERS = {}; // 変更点1: 全ユーザーの情報を保持するための変数を追加
   let myProfile = {}; 
   
   let currentLane = 'idea';
@@ -320,6 +318,15 @@ body{
       if (document.querySelector('.panel[data-panel="post"]').classList.contains('active')) {
         renderPostForm();
       }
+    }
+  });
+
+  // --- 変更点2: 全ユーザーのプロフィール読み込み（相手の名前を表示するため） ---
+  onValue(ref(db, 'musubi/users'), (snapshot) => {
+    USERS = snapshot.val() || {};
+    // もしメッセージ一覧画面を開いていたら再描画する
+    if (document.querySelector('.panel[data-panel="messages"]').classList.contains('active')) {
+      renderMessageList();
     }
   });
 
@@ -492,9 +499,13 @@ body{
           let avatarText = '';
           
           if (isMyPost) {
+            // 変更点3: USERSデータを使って、相手（応募者）の名前を取得する
+            const visitorProfile = USERS[visitorId] || {};
+            const visitorName = visitorProfile.name || `応募者（...${visitorId.slice(-4)}）`;
+            
             displayTitle = `📥 あなたの投稿「${targetItem.title}」へ`;
-            chatPartnerName = `応募者（...${visitorId.slice(-4)}）さん`; 
-            avatarText = '✉️';
+            chatPartnerName = `${visitorName}さん`; 
+            avatarText = visitorProfile.name ? visitorProfile.name.charAt(0).toUpperCase() : '✉️';
           } else {
             displayTitle = `送信済：${targetItem.name}さん`;
             chatPartnerName = `${targetItem.name}さん`;
@@ -531,7 +542,7 @@ body{
     if(!item) return;
     
     currentChatRoomId = item.id + '_' + visitorId;
-    document.getElementById('chatName').textContent = partnerName;
+    document.getElementById('chatName').textContent = partnerName; // ちゃんと相手の名前が入る！
     
     if(unsubscribeChat) unsubscribeChat();
     
@@ -574,7 +585,6 @@ body{
     input.value = ''; 
   }
 
-  // --- 変更点: アイデア部分だけを入力する新規投稿フォーム ---
   function renderPostForm(){
     const container = document.getElementById('postFormArea');
 
@@ -590,7 +600,6 @@ body{
 
     const isIdea = currentPlane === 'idea';
 
-    // 誰として投稿しているかがわかるバッジと、アイデア入力欄を表示
     container.innerHTML = `
       <div style="margin-bottom:16px; font-size:13px; color:var(--ink-soft); display:flex; align-items:center; gap:8px; background:var(--chip); padding:10px 14px; border-radius:8px;">
         <div class="avatar" style="width:24px;height:24px;font-size:10px;background:var(--cta);color:#fff;">${myProfile.name.charAt(0).toUpperCase()}</div>
@@ -623,7 +632,6 @@ body{
         return;
       }
 
-      // プロフィールの情報と、今入力したアイデアの情報を合体させる
       const data = {
         name: myProfile.name,
         initial: myProfile.name.charAt(0).toUpperCase(),
@@ -642,6 +650,12 @@ body{
           await push(ref(db, 'musubi/techs'), data);
         }
         alert('投稿が完了しました！');
+        
+        // 投稿後にフォームを空にする
+        document.getElementById('post-title').value = '';
+        document.getElementById('post-summary').value = '';
+        document.getElementById('post-detail').value = '';
+        
         showScreen('home');
       } catch (error) {
         console.error("保存失敗", error);
