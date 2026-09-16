@@ -98,7 +98,7 @@ body{
 }
 .lane-idea .avatar{background:var(--idea);}
 .lane-tech .avatar{background:var(--tech);}
-.card-body{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.card-body{display:flex;flex-direction:column;gap:3px;min-width:0;width:100%;}
 .card-title{font-size:14px;font-weight:600;}
 .card-desc{font-size:12.5px;color:var(--ink-soft);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .card-meta{font-size:10.5px;color:var(--ink-faint);margin-top:2px;}
@@ -128,22 +128,23 @@ body{
 .detail-block dd{margin:0;font-size:14px;line-height:1.7;white-space:pre-wrap;}
 .detail-block{margin-bottom:14px;}
 .cta-btn{
-  margin-top:auto;background:var(--cta);color:var(--surface);border:none;border-radius:12px;
+  background:var(--cta);color:var(--surface);border:none;border-radius:12px;
   padding:13px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0;
+  width: 100%;
 }
 .cta-btn:hover{opacity:.92;}
 
 .delete-btn{
   background: var(--chip); color: var(--ink-soft); border: none; border-radius: 12px;
   padding: 13px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; flex-shrink: 0;
-  margin-top: 8px;
+  margin-top: 8px; width: 100%;
 }
 .delete-btn:hover{opacity:.8;}
 
 /* ---- chat ---- */
 .chat-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-shrink:0;}
 .chat-scroll{flex:1;overflow-y:auto;padding:14px 14px;display:flex;flex-direction:column;gap:8px;}
-.bubble{max-width:78%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;}
+.bubble{max-width:78%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5; word-wrap:break-word;}
 .bubble.them{align-self:flex-start;background:var(--chip);border-bottom-left-radius:4px;}
 .bubble.me{align-self:flex-end;background:var(--cta-soft);color:var(--ink);border-bottom-right-radius:4px;}
 .chat-input{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);flex-shrink:0; padding-bottom: calc(10px + env(safe-area-inset-bottom));}
@@ -177,7 +178,6 @@ body{
     <div class="appbar">
       <div class="appbar-top">
         <div class="appname">ムスビ</div>
-        <!-- 変更点: 右上に新規投稿ボタンを配置 -->
         <button class="post-btn-top" id="headerPostBtn">＋ 新規投稿</button>
       </div>
       <div class="tabs">
@@ -189,8 +189,7 @@ body{
     
     <div class="bottomnav">
       <div class="navbtn active" data-nav="home"><span class="dot">◎</span>ホーム</div>
-      <div class="navbtn" data-nav="chat"><span class="dot">✉</span>メッセージ</div>
-      <!-- 変更点: 「投稿」から「プロフィール」に変更 -->
+      <div class="navbtn" data-nav="messages"><span class="dot">✉</span>メッセージ</div>
       <div class="navbtn" data-nav="mypage"><span class="dot">👤</span>プロフィール</div>
     </div>
   </div>
@@ -203,10 +202,24 @@ body{
     <div class="detail-scroll" id="detailBody"></div>
   </div>
 
-  <!-- ③ CHAT -->
+  <!-- ③ MESSAGES LIST (メッセージ一覧画面) -->
+  <div class="panel" data-panel="messages">
+    <div class="appbar">
+      <div class="appname">メッセージ一覧</div>
+    </div>
+    <div class="scroll" id="messageList"></div>
+    
+    <div class="bottomnav">
+      <div class="navbtn" data-nav="home"><span class="dot">◎</span>ホーム</div>
+      <div class="navbtn active" data-nav="messages"><span class="dot">✉</span>メッセージ</div>
+      <div class="navbtn" data-nav="mypage"><span class="dot">👤</span>プロフィール</div>
+    </div>
+  </div>
+
+  <!-- ④ CHAT (チャット画面) -->
   <div class="panel" data-panel="chat">
     <div class="chat-head">
-      <button class="backbtn" data-back="home">←</button>
+      <button class="backbtn" data-back="messages">← 戻る</button>
       <div>
         <div style="font-size:14px;font-weight:600;" id="chatName">ユーザーさん</div>
       </div>
@@ -218,7 +231,7 @@ body{
     </div>
   </div>
 
-  <!-- ④ POST (新規投稿画面) -->
+  <!-- ⑤ POST (新規投稿画面) -->
   <div class="panel" data-panel="post">
     <div class="appbar">
       <div style="display:flex; align-items:center; gap:12px;">
@@ -233,7 +246,7 @@ body{
     <div class="profile-scroll" id="profileForm"></div>
   </div>
 
-  <!-- ⑤ MYPAGE (自分のプロフィール画面) -->
+  <!-- ⑥ MYPAGE -->
   <div class="panel" data-panel="mypage">
     <div class="appbar">
       <div class="appname">プロフィール</div>
@@ -245,10 +258,9 @@ body{
       <p style="font-size:11px; color:var(--ink-faint); margin-top:24px;">※プロトタイプにつき準備中</p>
     </div>
     
-    <!-- ホーム画面と同じボトムナビを配置 -->
     <div class="bottomnav">
       <div class="navbtn" data-nav="home"><span class="dot">◎</span>ホーム</div>
-      <div class="navbtn" data-nav="chat"><span class="dot">✉</span>メッセージ</div>
+      <div class="navbtn" data-nav="messages"><span class="dot">✉</span>メッセージ</div>
       <div class="navbtn active" data-nav="mypage"><span class="dot">👤</span>プロフィール</div>
     </div>
   </div>
@@ -272,11 +284,20 @@ body{
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
+  // あなた専用のIDをブラウザに記憶させる（ログインの代わり）
+  let myUserId = localStorage.getItem('musubi_user_id');
+  if(!myUserId) {
+    myUserId = 'user_' + Date.now();
+    localStorage.setItem('musubi_user_id', myUserId);
+  }
+
   let IDEAS = [];
   let TECHS = [];
+  let CHATS = {}; 
   let currentLane = 'idea';
   let currentPlane = 'idea';
-  let lastDetail = null;
+  let currentChatRoomId = null; // 今開いているチャットルームのID
+  let unsubscribeChat = null; 
 
   onValue(ref(db, 'musubi/ideas'), (snapshot) => {
     IDEAS = [];
@@ -284,6 +305,7 @@ body{
       IDEAS.push({ id: childSnapshot.key, lane: 'idea', ...childSnapshot.val() });
     });
     if (currentLane === 'idea') renderCards();
+    if (document.querySelector('.panel[data-panel="messages"]').classList.contains('active')) renderMessageList();
   });
 
   onValue(ref(db, 'musubi/techs'), (snapshot) => {
@@ -292,11 +314,20 @@ body{
       TECHS.push({ id: childSnapshot.key, lane: 'tech', ...childSnapshot.val() });
     });
     if (currentLane === 'tech') renderCards();
+    if (document.querySelector('.panel[data-panel="messages"]').classList.contains('active')) renderMessageList();
+  });
+
+  onValue(ref(db, 'musubi/chats'), (snapshot) => {
+    CHATS = snapshot.val() || {};
+    if (document.querySelector('.panel[data-panel="messages"]').classList.contains('active')) {
+      renderMessageList();
+    }
   });
 
   function showScreen(name){
     document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
     document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
+    if(name === 'messages') renderMessageList();
   }
 
   function renderCards(){
@@ -320,9 +351,27 @@ body{
   function openDetail(id){
     const item = [...IDEAS, ...TECHS].find(x => x.id === id);
     if(!item) return;
-    lastDetail = item;
     const laneLabel = item.lane === 'idea' ? 'アイデア枠' : '技術枠';
     
+    // 自分が投稿したものかどうかを判定
+    const isMine = (item.authorId === myUserId);
+    
+    let actionButtons = '';
+    if (isMine) {
+      actionButtons = `
+        <div style="margin-top:auto; padding:14px; background:var(--chip); color:var(--ink-soft); border-radius:12px; text-align:center; font-size:13px; font-weight:600;">
+          これはあなたの投稿です。<br>届いたメッセージは「一覧」から確認できます。
+        </div>
+        <button class="delete-btn" id="deletePostBtn">この投稿を削除する</button>
+      `;
+    } else {
+      actionButtons = `
+        <div style="margin-top:auto;">
+          <button class="cta-btn" id="toChatBtn">この人にメッセージを送る</button>
+        </div>
+      `;
+    }
+
     document.getElementById('detailBody').innerHTML = `
       <span class="lane-badge ${item.lane}">${laneLabel}</span>
       <div style="display:flex;gap:12px;align-items:center;">
@@ -344,46 +393,155 @@ body{
         <dt>アプリ内実績</dt>
         <dd>${item.achievement || '実績なし'}</dd>
       </dl>
-      <button class="cta-btn" id="toChatBtn">この人にメッセージを送る</button>
-      <button class="delete-btn" id="deletePostBtn">この投稿を削除する</button>`;
+      ${actionButtons}
+    `;
       
-    document.getElementById('toChatBtn').addEventListener('click', () => openChat(item));
-    
-    document.getElementById('deletePostBtn').addEventListener('click', async () => {
-      const isConfirmed = confirm('本当にこの投稿を削除しますか？\n（一度削除すると元に戻せません）');
-      if(isConfirmed) {
-        try {
-          const dbPath = item.lane === 'idea' ? `musubi/ideas/${item.id}` : `musubi/techs/${item.id}`;
-          await remove(ref(db, dbPath)); 
-          alert('投稿を削除しました。');
-          showScreen('home');
-        } catch (error) {
-          console.error("削除失敗", error);
-          alert('削除に失敗しました。');
+    if (isMine) {
+      document.getElementById('deletePostBtn').addEventListener('click', async () => {
+        const isConfirmed = confirm('本当にこの投稿を削除しますか？\n（一度削除すると元に戻せません）');
+        if(isConfirmed) {
+          try {
+            const dbPath = item.lane === 'idea' ? `musubi/ideas/${item.id}` : `musubi/techs/${item.id}`;
+            await remove(ref(db, dbPath)); 
+            alert('投稿を削除しました。');
+            showScreen('home');
+          } catch (error) {
+            console.error("削除失敗", error);
+            alert('削除に失敗しました。');
+          }
         }
-      }
-    });
+      });
+    } else {
+      // 相手の投稿なら、自分のIDを使ってチャットを開く
+      document.getElementById('toChatBtn').addEventListener('click', () => openChat(item, myUserId, item.name + 'さん'));
+    }
 
     showScreen('detail');
   }
 
-  function openChat(item){
-    document.getElementById('chatName').textContent = item ? item.name : 'ユーザーさん';
-    document.getElementById('chatScroll').innerHTML = ''; 
+  // メッセージ一覧の表示機能
+  function renderMessageList(){
+    const listDiv = document.getElementById('messageList');
+    const allItems = [...IDEAS, ...TECHS];
+    listDiv.innerHTML = ''; 
+
+    let hasChats = false;
+
+    // データベース上のすべてのチャットルームを確認
+    for (const roomId in CHATS) {
+      const roomData = CHATS[roomId];
+      
+      // ルームIDは「投稿ID_応募者ID」という形になっています
+      const parts = roomId.split('_');
+      if (parts.length < 2) continue; // 古い形式のデータは無視
+      const postId = parts[0];
+      const visitorId = parts.slice(1).join('_'); // 応募者のID
+      
+      const targetItem = allItems.find(x => x.id === postId);
+      
+      if(targetItem) {
+        // 自分が投稿主か、自分が応募者かを確認
+        let isMyPost = (targetItem.authorId === myUserId);
+        let isMyInquiry = (visitorId === myUserId);
+
+        // 自分に関係あるチャットだけを表示
+        if (isMyPost || isMyInquiry) {
+          hasChats = true;
+          const messages = Object.values(roomData);
+          const lastMsg = messages[messages.length - 1]; // 最後のメッセージを取得
+
+          let displayTitle = '';
+          let chatPartnerName = '';
+          let avatarText = '';
+          
+          if (isMyPost) {
+            // 自分に届いたメッセージ
+            displayTitle = `📥 あなたの投稿「${targetItem.title}」へ`;
+            chatPartnerName = `応募者（...${visitorId.slice(-4)}）さん`; 
+            avatarText = '✉️';
+          } else {
+            // 自分が送ったメッセージ
+            displayTitle = `送信済：${targetItem.name}さん`;
+            chatPartnerName = `${targetItem.name}さん`;
+            avatarText = targetItem.initial || '?';
+          }
+
+          const isUnread = lastMsg.senderId !== myUserId; // 最後の発言が相手なら未読っぽく太字にする
+
+          const btn = document.createElement('button');
+          btn.className = 'card';
+          btn.style.alignItems = 'center';
+          btn.innerHTML = `
+            <div class="avatar lane-${targetItem.lane}" style="width:40px;height:40px;font-size:14px; background:${isMyPost ? 'var(--idea)' : ''};">${avatarText}</div>
+            <div class="card-body" style="width:100%; overflow:hidden;">
+              <div class="card-title" style="font-size:13px;">${displayTitle}</div>
+              <div class="card-desc" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:${isUnread ? '600':'400'}; color:${isUnread ? 'var(--ink)':'var(--ink-soft)'};">
+                ${lastMsg ? lastMsg.text : 'メッセージがあります'}
+              </div>
+            </div>
+          `;
+          
+          // タップしたらその個別チャットルームを開く
+          btn.addEventListener('click', () => openChat(targetItem, visitorId, chatPartnerName));
+          listDiv.appendChild(btn);
+        }
+      }
+    }
+
+    if(!hasChats) {
+      listDiv.innerHTML = '<div style="text-align:center;color:var(--ink-faint);margin-top:20px;font-size:13px;">まだメッセージのやり取りはありません。</div>';
+    }
+  }
+
+  // チャット画面を開く機能
+  function openChat(item, visitorId, partnerName){
+    if(!item) return;
+    
+    // 今回使うチャットルームのIDを決定（投稿ID + 応募者ID）
+    currentChatRoomId = item.id + '_' + visitorId;
+    document.getElementById('chatName').textContent = partnerName;
+    
+    if(unsubscribeChat) unsubscribeChat();
+    
+    const chatRef = ref(db, `musubi/chats/${currentChatRoomId}`);
+    unsubscribeChat = onValue(chatRef, (snapshot) => {
+      const scroll = document.getElementById('chatScroll');
+      scroll.innerHTML = ''; 
+      
+      snapshot.forEach((child) => {
+        const data = child.val();
+        const div = document.createElement('div');
+        // 自分が送ったメッセージなら右側（me）、相手なら左側（them）
+        if (data.senderId === myUserId) {
+          div.className = 'bubble me';
+        } else {
+          div.className = 'bubble them';
+        }
+        div.textContent = data.text;
+        scroll.appendChild(div);
+      });
+      scroll.scrollTop = 999999;
+    });
+
     showScreen('chat');
   }
 
   document.getElementById('chatSend').addEventListener('click', sendChat);
   document.getElementById('chatInput').addEventListener('keydown', e => { if(e.key === 'Enter') sendChat(); });
+  
   function sendChat(){
     const input = document.getElementById('chatInput');
-    if(!input.value.trim()) return;
-    const div = document.createElement('div');
-    div.className = 'bubble me';
-    div.textContent = input.value.trim();
-    document.getElementById('chatScroll').appendChild(div);
-    input.value = '';
-    document.getElementById('chatScroll').scrollTop = 999999;
+    const text = input.value.trim();
+    if(!text || !currentChatRoomId) return;
+    
+    // 決定されたチャットルームに対してメッセージを送信
+    push(ref(db, `musubi/chats/${currentChatRoomId}`), {
+      text: text,
+      senderId: myUserId,
+      timestamp: Date.now()
+    });
+    
+    input.value = ''; 
   }
 
   function renderProfileForm(){
@@ -428,6 +586,8 @@ body{
         summary: summary,
         detail: detail,
         achievement: achievement,
+        // ここが重要！誰が投稿したかを記録する
+        authorId: myUserId, 
         timestamp: Date.now()
       };
 
@@ -453,7 +613,6 @@ body{
     });
   }
 
-  // ホーム画面右上の「＋ 新規投稿」ボタンを押したときの処理
   document.getElementById('headerPostBtn').addEventListener('click', () => showScreen('post'));
 
   document.getElementById('tabIdea').addEventListener('click', () => { currentLane='idea'; document.getElementById('tabIdea').classList.add('tab-active'); document.getElementById('tabTech').classList.remove('tab-active'); renderCards(); });
@@ -462,8 +621,11 @@ body{
   document.getElementById('planeTech').addEventListener('click', () => { currentPlane='tech'; document.getElementById('planeTech').classList.add('tab-active'); document.getElementById('planeIdea').classList.remove('tab-active'); renderProfileForm(); });
 
   document.querySelectorAll('.navbtn').forEach(b => b.addEventListener('click', () => {
-    if(b.dataset.nav === 'chat') openChat(lastDetail);
-    else showScreen(b.dataset.nav);
+    if(b.dataset.nav === 'chat') {
+      showScreen('messages');
+    } else {
+      showScreen(b.dataset.nav);
+    }
   }));
   document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => showScreen(b.dataset.back)));
 
