@@ -141,10 +141,10 @@ body{
 
 /* ---- chat ---- */
 .chat-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-shrink:0;}
-.chat-scroll{flex:1;overflow-y:auto;padding:14px 14px;display:flex;flex-direction:column;gap:8px;}
-.bubble{max-width:78%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5; word-wrap:break-word;}
-.bubble.them{align-self:flex-start;background:var(--chip);border-bottom-left-radius:4px;}
-.bubble.me{align-self:flex-end;background:var(--cta-soft);color:var(--ink);border-bottom-right-radius:4px;}
+.chat-scroll{flex:1;overflow-y:auto;padding:14px 14px;display:flex;flex-direction:column;gap:12px;}
+.bubble{padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5; word-wrap:break-word;}
+.bubble.them{background:var(--chip);border-bottom-left-radius:4px;}
+.bubble.me{background:var(--cta-soft);color:var(--ink);border-bottom-right-radius:4px;}
 .chat-input{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);flex-shrink:0; padding-bottom: calc(10px + env(safe-area-inset-bottom));}
 .chat-input input{
   flex:1;border:1px solid var(--line);border-radius:100px;padding:9px 14px;font:inherit;font-size:13px;
@@ -154,7 +154,7 @@ body{
   background:var(--cta);color:var(--surface);border:none;border-radius:100px;padding:0 16px;font-size:13px;font-weight:600;cursor:pointer;
 }
 
-/* ---- profile (post / mypage) ---- */
+/* ---- profile ---- */
 .profile-scroll{flex:1;overflow-y:auto;padding:16px 18px 18px;display:flex;flex-direction:column;gap:14px;}
 .field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-faint);margin-bottom:5px;}
 .field textarea, .field input{
@@ -203,7 +203,7 @@ body{
   <!-- ③ MESSAGES LIST -->
   <div class="panel" data-panel="messages">
     <div class="appbar">
-      <div class="appname">メッセージ一覧</div>
+      <div class="appname">参加中プロジェクト</div>
     </div>
     <div class="scroll" id="messageList"></div>
     
@@ -214,12 +214,13 @@ body{
     </div>
   </div>
 
-  <!-- ④ CHAT -->
+  <!-- ④ CHAT (グループチャット画面) -->
   <div class="panel" data-panel="chat">
     <div class="chat-head">
       <button class="backbtn" data-back="messages">← 戻る</button>
       <div>
-        <div style="font-size:14px;font-weight:600;" id="chatName">ユーザーさん</div>
+        <!-- プロジェクト名が表示されます -->
+        <div style="font-size:14px;font-weight:600;" id="chatName">プロジェクト</div>
       </div>
     </div>
     <div class="chat-scroll" id="chatScroll"></div>
@@ -229,7 +230,7 @@ body{
     </div>
   </div>
 
-  <!-- ⑤ POST (新規投稿画面) -->
+  <!-- ⑤ POST -->
   <div class="panel" data-panel="post">
     <div class="appbar">
       <div style="display:flex; align-items:center; gap:12px;">
@@ -244,7 +245,7 @@ body{
     <div class="profile-scroll" id="postFormArea"></div>
   </div>
 
-  <!-- ⑥ MYPAGE (プロフィール設定画面) -->
+  <!-- ⑥ MYPAGE -->
   <div class="panel" data-panel="mypage">
     <div class="appbar">
       <div class="appname">プロフィール設定</div>
@@ -252,7 +253,7 @@ body{
     <div class="profile-scroll">
       <div style="text-align:center; margin-bottom:12px;">
         <div class="avatar" style="width:72px; height:72px; font-size:28px; margin:0 auto 10px; background:var(--chip); color:var(--ink-soft);" id="myAvatarDisplay">👤</div>
-        <div style="font-size:12.5px; color:var(--ink-soft); line-height:1.5;">ここで設定したお名前や実績が、<br>あなたの投稿に自動で紐づけられます。</div>
+        <div style="font-size:12.5px; color:var(--ink-soft); line-height:1.5;">ここで設定したお名前や実績が、<br>あなたの投稿や発言に紐づけられます。</div>
       </div>
       <div class="field"><label>お名前</label><input id="my-name" placeholder="例: 佐藤さん"></div>
       <div class="field"><label>実績・経歴など</label><textarea id="my-achievement" rows="2" placeholder="例: ハッカソン出場経験あり / 未経験・アイデアのみ"></textarea></div>
@@ -294,7 +295,7 @@ body{
   let IDEAS = [];
   let TECHS = [];
   let CHATS = {}; 
-  let USERS = {}; // 変更点1: 全ユーザーの情報を保持するための変数を追加
+  let USERS = {}; 
   let myProfile = {}; 
   
   let currentLane = 'idea';
@@ -302,7 +303,6 @@ body{
   let currentChatRoomId = null; 
   let unsubscribeChat = null; 
 
-  // --- 自分のプロフィール読み込み ---
   onValue(ref(db, `musubi/users/${myUserId}`), (snapshot) => {
     if (snapshot.exists()) {
       myProfile = snapshot.val();
@@ -321,16 +321,13 @@ body{
     }
   });
 
-  // --- 変更点2: 全ユーザーのプロフィール読み込み（相手の名前を表示するため） ---
   onValue(ref(db, 'musubi/users'), (snapshot) => {
     USERS = snapshot.val() || {};
-    // もしメッセージ一覧画面を開いていたら再描画する
     if (document.querySelector('.panel[data-panel="messages"]').classList.contains('active')) {
       renderMessageList();
     }
   });
 
-  // --- マイページ：プロフィールの保存 ---
   document.getElementById('saveMyProfileBtn').addEventListener('click', async () => {
     const name = document.getElementById('my-name').value.trim();
     const achievement = document.getElementById('my-achievement').value.trim();
@@ -370,6 +367,7 @@ body{
     if (document.querySelector('.panel[data-panel="messages"]').classList.contains('active')) renderMessageList();
   });
 
+  // チャット全体の読み込み
   onValue(ref(db, 'musubi/chats'), (snapshot) => {
     CHATS = snapshot.val() || {};
     if (document.querySelector('.panel[data-panel="messages"]').classList.contains('active')) {
@@ -408,19 +406,15 @@ body{
     const laneLabel = item.lane === 'idea' ? 'アイデア枠' : '技術枠';
     const isMine = (item.authorId === myUserId);
     
-    let actionButtons = '';
+    // 詳細画面のボタンを「チャット（掲示板）を開く」に統一
+    let actionButtons = `
+      <button class="cta-btn" id="toChatBtn" style="margin-top:auto;">このプロジェクトのチャットに参加する</button>
+    `;
+    
+    // 自分の投稿の場合は削除ボタンも追加
     if (isMine) {
-      actionButtons = `
-        <div style="margin-top:auto; padding:14px; background:var(--chip); color:var(--ink-soft); border-radius:12px; text-align:center; font-size:13px; font-weight:600;">
-          これはあなたの投稿です。<br>届いたメッセージは「一覧」から確認できます。
-        </div>
+      actionButtons += `
         <button class="delete-btn" id="deletePostBtn">この投稿を削除する</button>
-      `;
-    } else {
-      actionButtons = `
-        <div style="margin-top:auto;">
-          <button class="cta-btn" id="toChatBtn">この人にメッセージを送る</button>
-        </div>
       `;
     }
 
@@ -448,13 +442,18 @@ body{
       ${actionButtons}
     `;
       
+    // 誰でも共通のプロジェクトルームを開ける
+    document.getElementById('toChatBtn').addEventListener('click', () => openChat(item));
+
     if (isMine) {
       document.getElementById('deletePostBtn').addEventListener('click', async () => {
-        const isConfirmed = confirm('本当にこの投稿を削除しますか？\n（一度削除すると元に戻せません）');
+        const isConfirmed = confirm('本当にこの投稿を削除しますか？\n（関連するチャット履歴も消えます）');
         if(isConfirmed) {
           try {
             const dbPath = item.lane === 'idea' ? `musubi/ideas/${item.id}` : `musubi/techs/${item.id}`;
             await remove(ref(db, dbPath)); 
+            // プロジェクトに紐づくチャットも一緒に削除
+            await remove(ref(db, `musubi/chats/${item.id}`));
             alert('投稿を削除しました。');
             showScreen('home');
           } catch (error) {
@@ -463,86 +462,61 @@ body{
           }
         }
       });
-    } else {
-      document.getElementById('toChatBtn').addEventListener('click', () => openChat(item, myUserId, item.name + 'さん'));
     }
 
     showScreen('detail');
   }
 
+  // --- プロジェクトベースのメッセージ一覧の描画 ---
   function renderMessageList(){
     const listDiv = document.getElementById('messageList');
     const allItems = [...IDEAS, ...TECHS];
     listDiv.innerHTML = ''; 
     let hasChats = false;
 
+    // 存在するチャットルーム（＝プロジェクト）ごとに表示
     for (const roomId in CHATS) {
       const roomData = CHATS[roomId];
-      const parts = roomId.split('_');
-      if (parts.length < 2) continue; 
-      const postId = parts[0];
-      const visitorId = parts.slice(1).join('_'); 
+      const targetItem = allItems.find(x => x.id === roomId);
       
-      const targetItem = allItems.find(x => x.id === postId);
-      
+      // まだプロジェクトが存在している場合のみ
       if(targetItem) {
-        let isMyPost = (targetItem.authorId === myUserId);
-        let isMyInquiry = (visitorId === myUserId);
+        hasChats = true;
+        const messages = Object.values(roomData);
+        const lastMsg = messages[messages.length - 1]; 
 
-        if (isMyPost || isMyInquiry) {
-          hasChats = true;
-          const messages = Object.values(roomData);
-          const lastMsg = messages[messages.length - 1]; 
+        const isUnread = lastMsg.senderId !== myUserId; 
 
-          let displayTitle = '';
-          let chatPartnerName = '';
-          let avatarText = '';
-          
-          if (isMyPost) {
-            // 変更点3: USERSデータを使って、相手（応募者）の名前を取得する
-            const visitorProfile = USERS[visitorId] || {};
-            const visitorName = visitorProfile.name || `応募者（...${visitorId.slice(-4)}）`;
-            
-            displayTitle = `📥 あなたの投稿「${targetItem.title}」へ`;
-            chatPartnerName = `${visitorName}さん`; 
-            avatarText = visitorProfile.name ? visitorProfile.name.charAt(0).toUpperCase() : '✉️';
-          } else {
-            displayTitle = `送信済：${targetItem.name}さん`;
-            chatPartnerName = `${targetItem.name}さん`;
-            avatarText = targetItem.initial || '?';
-          }
-
-          const isUnread = lastMsg.senderId !== myUserId; 
-
-          const btn = document.createElement('button');
-          btn.className = 'card';
-          btn.style.alignItems = 'center';
-          btn.innerHTML = `
-            <div class="avatar lane-${targetItem.lane}" style="width:40px;height:40px;font-size:14px; background:${isMyPost ? 'var(--idea)' : ''};">${avatarText}</div>
-            <div class="card-body" style="width:100%; overflow:hidden;">
-              <div class="card-title" style="font-size:13px;">${displayTitle}</div>
-              <div class="card-desc" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:${isUnread ? '600':'400'}; color:${isUnread ? 'var(--ink)':'var(--ink-soft)'};">
-                ${lastMsg ? lastMsg.text : 'メッセージがあります'}
-              </div>
+        const btn = document.createElement('button');
+        btn.className = 'card';
+        btn.style.alignItems = 'center';
+        btn.innerHTML = `
+          <div class="avatar lane-${targetItem.lane}" style="width:40px;height:40px;font-size:14px;">${targetItem.initial || '?'}</div>
+          <div class="card-body" style="width:100%; overflow:hidden;">
+            <div class="card-title" style="font-size:13px;">${targetItem.title}</div>
+            <div class="card-desc" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:${isUnread ? '600':'400'}; color:${isUnread ? 'var(--ink)':'var(--ink-soft)'};">
+              ${lastMsg.senderName || '誰か'}: ${lastMsg.text}
             </div>
-          `;
-          
-          btn.addEventListener('click', () => openChat(targetItem, visitorId, chatPartnerName));
-          listDiv.appendChild(btn);
-        }
+          </div>
+        `;
+        
+        btn.addEventListener('click', () => openChat(targetItem));
+        listDiv.appendChild(btn);
       }
     }
 
     if(!hasChats) {
-      listDiv.innerHTML = '<div style="text-align:center;color:var(--ink-faint);margin-top:20px;font-size:13px;">まだメッセージのやり取りはありません。</div>';
+      listDiv.innerHTML = '<div style="text-align:center;color:var(--ink-faint);margin-top:20px;font-size:13px;">現在動いているプロジェクトのチャットはありません。<br>気になるプロジェクトに参加してみましょう！</div>';
     }
   }
 
-  function openChat(item, visitorId, partnerName){
+  // --- グループチャット画面の描画 ---
+  function openChat(item){
     if(!item) return;
     
-    currentChatRoomId = item.id + '_' + visitorId;
-    document.getElementById('chatName').textContent = partnerName; // ちゃんと相手の名前が入る！
+    // プロジェクトIDそのものがチャットルームのIDになる
+    currentChatRoomId = item.id;
+    document.getElementById('chatName').textContent = item.title;
     
     if(unsubscribeChat) unsubscribeChat();
     
@@ -553,14 +527,40 @@ body{
       
       snapshot.forEach((child) => {
         const data = child.val();
-        const div = document.createElement('div');
+        
+        // 吹き出しのラッパーを作る（名前と吹き出しを縦に並べるため）
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = 'column';
+        wrapper.style.maxWidth = '78%';
+
         if (data.senderId === myUserId) {
-          div.className = 'bubble me';
+          wrapper.style.alignSelf = 'flex-end';
+          
+          const bubble = document.createElement('div');
+          bubble.className = 'bubble me';
+          bubble.textContent = data.text;
+          wrapper.appendChild(bubble);
         } else {
-          div.className = 'bubble them';
+          wrapper.style.alignSelf = 'flex-start';
+          
+          // 相手の名前ラベルを追加
+          const nameLabel = document.createElement('div');
+          nameLabel.style.fontSize = '11px';
+          nameLabel.style.color = 'var(--ink-faint)';
+          nameLabel.style.marginBottom = '2px';
+          nameLabel.style.marginLeft = '4px';
+          // 投稿者本人の発言なら「👑」マークなどを付けると分かりやすい
+          nameLabel.textContent = (data.senderId === item.authorId ? '👑 ' : '') + (data.senderName || '匿名さん');
+
+          const bubble = document.createElement('div');
+          bubble.className = 'bubble them';
+          bubble.textContent = data.text;
+          
+          wrapper.appendChild(nameLabel);
+          wrapper.appendChild(bubble);
         }
-        div.textContent = data.text;
-        scroll.appendChild(div);
+        scroll.appendChild(wrapper);
       });
       scroll.scrollTop = 999999;
     });
@@ -576,9 +576,11 @@ body{
     const text = input.value.trim();
     if(!text || !currentChatRoomId) return;
     
+    // 送信者の「名前」も一緒にデータベースに保存する
     push(ref(db, `musubi/chats/${currentChatRoomId}`), {
       text: text,
       senderId: myUserId,
+      senderName: myProfile.name || 'ゲスト', 
       timestamp: Date.now()
     });
     
@@ -651,7 +653,6 @@ body{
         }
         alert('投稿が完了しました！');
         
-        // 投稿後にフォームを空にする
         document.getElementById('post-title').value = '';
         document.getElementById('post-summary').value = '';
         document.getElementById('post-detail').value = '';
