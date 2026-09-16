@@ -161,7 +161,7 @@ body{
   width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:inherit;font-size:13.5px;
   background:var(--surface);color:var(--ink);resize:none;
 }
-.save-btn{background:var(--cta);color:var(--surface);border:none;border-radius:12px;padding:12px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:4px;}
+.save-btn{background:var(--cta);color:var(--surface);border:none;border-radius:12px;padding:12px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:4px;width:100%;}
 
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -241,10 +241,12 @@ body{
         <div class="tab" data-plane="tech" id="planeTech">技術枠</div>
       </div>
     </div>
-    <div class="profile-scroll" id="profileForm"></div>
+    <div class="profile-scroll" id="postFormArea">
+      <!-- ここにアイデア入力フォームが表示されます -->
+    </div>
   </div>
 
-  <!-- ⑥ MYPAGE (プロフィール設定画面に変更) -->
+  <!-- ⑥ MYPAGE (プロフィール設定画面) -->
   <div class="panel" data-panel="mypage">
     <div class="appbar">
       <div class="appname">プロフィール設定</div>
@@ -252,12 +254,11 @@ body{
     <div class="profile-scroll">
       <div style="text-align:center; margin-bottom:12px;">
         <div class="avatar" style="width:72px; height:72px; font-size:28px; margin:0 auto 10px; background:var(--chip); color:var(--ink-soft);" id="myAvatarDisplay">👤</div>
-        <div style="font-size:12.5px; color:var(--ink-soft); line-height:1.5;">ここで設定した情報が、<br>新規投稿のときに自動で反映されます。</div>
+        <div style="font-size:12.5px; color:var(--ink-soft); line-height:1.5;">ここで設定したお名前や実績が、<br>あなたの投稿に自動で紐づけられます。</div>
       </div>
+      <!-- マイページは「自分の基本情報」だけにスッキリさせました -->
       <div class="field"><label>お名前</label><input id="my-name" placeholder="例: 佐藤さん"></div>
-      <div class="field"><label>肩書き / 役割</label><input id="my-title" placeholder="例: フロントエンドエンジニア"></div>
-      <div class="field"><label>得意領域 / スキル</label><textarea id="my-summary" rows="2" placeholder="例: Webサイト制作が得意です"></textarea></div>
-      <div class="field"><label>実績など</label><input id="my-achievement" placeholder="例: ポートフォリオサイトを公開中"></div>
+      <div class="field"><label>実績・経歴など</label><textarea id="my-achievement" rows="2" placeholder="例: ハッカソン出場経験あり / 未経験・アイデアのみ"></textarea></div>
       <button class="save-btn" id="saveMyProfileBtn">プロフィールを保存</button>
     </div>
     
@@ -271,7 +272,6 @@ body{
 </div>
 
 <script type="module">
-  // 変更点1: 新しく「set」をインポートに追加しました
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
   import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 
@@ -297,53 +297,48 @@ body{
   let IDEAS = [];
   let TECHS = [];
   let CHATS = {}; 
-  let myProfile = {}; // 変更点2: 自分のプロフィール情報を保持する変数を追加
+  let myProfile = {}; 
   
   let currentLane = 'idea';
   let currentPlane = 'idea';
   let currentChatRoomId = null; 
   let unsubscribeChat = null; 
 
-  // --- データベースから自分のプロフィールを読み込む ---
+  // --- 自分のプロフィール読み込み ---
   onValue(ref(db, `musubi/users/${myUserId}`), (snapshot) => {
     if (snapshot.exists()) {
       myProfile = snapshot.val();
       
-      // マイページの入力欄に反映
       document.getElementById('my-name').value = myProfile.name || '';
-      document.getElementById('my-title').value = myProfile.title || '';
-      document.getElementById('my-summary').value = myProfile.summary || '';
       document.getElementById('my-achievement').value = myProfile.achievement || '';
       
-      // アバターの見た目を更新
       const avatarDiv = document.getElementById('myAvatarDisplay');
       avatarDiv.textContent = myProfile.name ? myProfile.name.charAt(0).toUpperCase() : '👤';
       avatarDiv.style.background = 'var(--cta)';
       avatarDiv.style.color = '#fff';
       
-      // もし新規投稿画面を開いていたら、そちらも再描画して最新状態を反映
       if (document.querySelector('.panel[data-panel="post"]').classList.contains('active')) {
-        renderProfileForm();
+        renderPostForm();
       }
     }
   });
 
-  // --- プロフィールを保存する機能 ---
+  // --- マイページ：プロフィールの保存 ---
   document.getElementById('saveMyProfileBtn').addEventListener('click', async () => {
     const name = document.getElementById('my-name').value.trim();
-    const title = document.getElementById('my-title').value.trim();
-    const summary = document.getElementById('my-summary').value.trim();
     const achievement = document.getElementById('my-achievement').value.trim();
 
-    if(!name) { alert("お名前は入力必須です。"); return; }
+    if(!name) { 
+      alert("お名前は入力必須です。"); 
+      return; 
+    }
 
     try {
-      // ユーザー専用のフォルダにデータを上書き保存(set)
       await set(ref(db, `musubi/users/${myUserId}`), {
-        name, title, summary, achievement,
+        name, achievement,
         updatedAt: Date.now()
       });
-      alert('プロフィールを保存しました！\n（新規投稿時に自動で入力されます）');
+      alert('プロフィールを保存しました！');
     } catch (error) {
       console.error("保存失敗", error);
       alert('エラーが発生しました。');
@@ -379,7 +374,7 @@ body{
     document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
     document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
     if(name === 'messages') renderMessageList();
-    if(name === 'post') renderProfileForm(); // 投稿画面を開く時にプロフィールを反映
+    if(name === 'post') renderPostForm(); 
   }
 
   function renderCards(){
@@ -579,61 +574,69 @@ body{
     input.value = ''; 
   }
 
-  // --- 変更点3: 新規投稿画面にプロフィールを初期反映させる ---
-  function renderProfileForm(){
-    // 保存されているプロフィールがあれば、それを初期値（value）に設定する
-    const defaultName = myProfile.name || "";
-    const defaultTitle = myProfile.title || "";
-    const defaultSummary = myProfile.summary || "";
-    const defaultAchievement = myProfile.achievement || "";
+  // --- 変更点: アイデア部分だけを入力する新規投稿フォーム ---
+  function renderPostForm(){
+    const container = document.getElementById('postFormArea');
 
-    if(currentPlane === 'idea'){
-      document.getElementById('profileForm').innerHTML = `
-        <div class="field"><label>お名前</label><input id="pf-name" value="${defaultName}" placeholder="例: 佐藤さん"></div>
-        <div class="field"><label>プロジェクト名 / タイトル</label><input id="pf-title" value="${defaultTitle}" placeholder="例: サステナブル文具プロジェクト"></div>
-        <div class="field"><label>ざっくりしたアイデア</label>
-          <textarea id="pf-summary" rows="2" placeholder="例: 使い切ったら植物になる、サステナブルな鉛筆"></textarea></div>
-        <div class="field"><label>作りたいもの（詳しく）</label>
-          <textarea id="pf-detail" rows="3" placeholder="まずは小ロットで試作し、学内販売から始めたい。"></textarea></div>
-        <div class="field"><label>アプリ内実績</label><input id="pf-achievement" value="${defaultAchievement}" placeholder="例: ハッカソン出場経験あり 等"></div>
-        <button class="save-btn" id="saveProfileBtn">投稿する</button>`;
-    } else {
-      document.getElementById('profileForm').innerHTML = `
-        <div class="field"><label>お名前</label><input id="pf-name" value="${defaultName}" placeholder="例: 鈴木さん"></div>
-        <div class="field"><label>できる役割 / タイトル</label><input id="pf-title" value="${defaultTitle}" placeholder="例: フロントエンド開発"></div>
-        <div class="field"><label>得意領域</label>
-          <textarea id="pf-summary" rows="2" placeholder="例: React / Next.js でのアプリ開発が得意">${defaultSummary}</textarea></div>
-        <div class="field"><label>使用できる技術領域</label>
-          <textarea id="pf-detail" rows="2" placeholder="例: React, TypeScript, Figma"></textarea></div>
-        <div class="field"><label>アプリ内実績</label><input id="pf-achievement" value="${defaultAchievement}" placeholder="例: 個人のアプリを3本リリース済み 等"></div>
-        <button class="save-btn" id="saveProfileBtn">投稿する</button>`;
+    if(!myProfile.name) {
+      container.innerHTML = `
+        <div style="text-align:center; padding-top:40px; color:var(--ink-soft); font-size:13.5px; line-height:1.6;">
+          お名前が設定されていません。<br>
+          まずは右下の「👤プロフィール」から<br>あなたの情報を登録してください。
+        </div>
+      `;
+      return;
     }
-    
-    document.getElementById('saveProfileBtn').addEventListener('click', async () => {
-      const name = document.getElementById('pf-name').value;
-      const title = document.getElementById('pf-title').value;
-      const summary = document.getElementById('pf-summary').value;
-      const detail = document.getElementById('pf-detail').value;
-      const achievement = document.getElementById('pf-achievement').value;
+
+    const isIdea = currentPlane === 'idea';
+
+    // 誰として投稿しているかがわかるバッジと、アイデア入力欄を表示
+    container.innerHTML = `
+      <div style="margin-bottom:16px; font-size:13px; color:var(--ink-soft); display:flex; align-items:center; gap:8px; background:var(--chip); padding:10px 14px; border-radius:8px;">
+        <div class="avatar" style="width:24px;height:24px;font-size:10px;background:var(--cta);color:#fff;">${myProfile.name.charAt(0).toUpperCase()}</div>
+        <div><b>${myProfile.name}</b> さんとして投稿します</div>
+      </div>
       
-      if(!name || !title || !summary) {
-        alert("名前、タイトル、概要は入力必須です。");
+      <div class="field">
+        <label>${isIdea ? 'プロジェクト名 / タイトル' : 'できる役割 / タイトル'}</label>
+        <input id="post-title" placeholder="${isIdea ? '例: サステナブル文具プロジェクト' : '例: フロントエンド開発'}">
+      </div>
+      <div class="field">
+        <label>${isIdea ? 'ざっくりしたアイデア' : '得意領域'}</label>
+        <textarea id="post-summary" rows="2" placeholder="${isIdea ? '例: 使い切ったら植物になる、サステナブルな鉛筆' : '例: React / Next.js でのアプリ開発が得意'}"></textarea>
+      </div>
+      <div class="field">
+        <label>${isIdea ? '作りたいもの（詳しく）' : '使用できる技術領域'}</label>
+        <textarea id="post-detail" rows="3" placeholder="${isIdea ? 'まずは小ロットで試作し、学内販売から始めたい。' : '例: React, TypeScript, Figma'}"></textarea>
+      </div>
+
+      <button class="save-btn" id="submitPostBtn">投稿する</button>
+    `;
+    
+    document.getElementById('submitPostBtn').addEventListener('click', async () => {
+      const title = document.getElementById('post-title').value.trim();
+      const summary = document.getElementById('post-summary').value.trim();
+      const detail = document.getElementById('post-detail').value.trim();
+      
+      if(!title || !summary) {
+        alert("タイトルと概要は入力必須です。");
         return;
       }
 
+      // プロフィールの情報と、今入力したアイデアの情報を合体させる
       const data = {
-        name: name,
-        initial: name.charAt(0).toUpperCase(),
+        name: myProfile.name,
+        initial: myProfile.name.charAt(0).toUpperCase(),
         title: title,
         summary: summary,
         detail: detail,
-        achievement: achievement,
+        achievement: myProfile.achievement || '',
         authorId: myUserId, 
         timestamp: Date.now()
       };
 
       try {
-        if(currentPlane === 'idea') {
+        if(isIdea) {
           await push(ref(db, 'musubi/ideas'), data);
         } else {
           await push(ref(db, 'musubi/techs'), data);
@@ -651,8 +654,9 @@ body{
 
   document.getElementById('tabIdea').addEventListener('click', () => { currentLane='idea'; document.getElementById('tabIdea').classList.add('tab-active'); document.getElementById('tabTech').classList.remove('tab-active'); renderCards(); });
   document.getElementById('tabTech').addEventListener('click', () => { currentLane='tech'; document.getElementById('tabTech').classList.add('tab-active'); document.getElementById('tabIdea').classList.remove('tab-active'); renderCards(); });
-  document.getElementById('planeIdea').addEventListener('click', () => { currentPlane='idea'; document.getElementById('planeIdea').classList.add('tab-active'); document.getElementById('planeTech').classList.remove('tab-active'); renderProfileForm(); });
-  document.getElementById('planeTech').addEventListener('click', () => { currentPlane='tech'; document.getElementById('planeTech').classList.add('tab-active'); document.getElementById('planeIdea').classList.remove('tab-active'); renderProfileForm(); });
+  
+  document.getElementById('planeIdea').addEventListener('click', () => { currentPlane='idea'; document.getElementById('planeIdea').classList.add('tab-active'); document.getElementById('planeTech').classList.remove('tab-active'); renderPostForm(); });
+  document.getElementById('planeTech').addEventListener('click', () => { currentPlane='tech'; document.getElementById('planeTech').classList.add('tab-active'); document.getElementById('planeIdea').classList.remove('tab-active'); renderPostForm(); });
 
   document.querySelectorAll('.navbtn').forEach(b => b.addEventListener('click', () => {
     if(b.dataset.nav === 'chat') {
@@ -664,7 +668,7 @@ body{
   document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => showScreen(b.dataset.back)));
 
   renderCards();
-  renderProfileForm();
+  renderPostForm(); 
 </script>
 </body>
 </html>
