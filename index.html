@@ -60,7 +60,6 @@ body{
 }
 .appname{font-weight:600; font-size:18px;}
 
-/* 右上の新規投稿ボタン */
 .post-btn-top {
   background: var(--cta);
   color: var(--surface);
@@ -133,7 +132,6 @@ body{
   width: 100%;
 }
 .cta-btn:hover{opacity:.92;}
-
 .delete-btn{
   background: var(--chip); color: var(--ink-soft); border: none; border-radius: 12px;
   padding: 13px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; flex-shrink: 0;
@@ -156,7 +154,7 @@ body{
   background:var(--cta);color:var(--surface);border:none;border-radius:100px;padding:0 16px;font-size:13px;font-weight:600;cursor:pointer;
 }
 
-/* ---- profile (post) ---- */
+/* ---- profile (post / mypage) ---- */
 .profile-scroll{flex:1;overflow-y:auto;padding:16px 18px 18px;display:flex;flex-direction:column;gap:14px;}
 .field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-faint);margin-bottom:5px;}
 .field textarea, .field input{
@@ -202,7 +200,7 @@ body{
     <div class="detail-scroll" id="detailBody"></div>
   </div>
 
-  <!-- ③ MESSAGES LIST (メッセージ一覧画面) -->
+  <!-- ③ MESSAGES LIST -->
   <div class="panel" data-panel="messages">
     <div class="appbar">
       <div class="appname">メッセージ一覧</div>
@@ -216,7 +214,7 @@ body{
     </div>
   </div>
 
-  <!-- ④ CHAT (チャット画面) -->
+  <!-- ④ CHAT -->
   <div class="panel" data-panel="chat">
     <div class="chat-head">
       <button class="backbtn" data-back="messages">← 戻る</button>
@@ -246,16 +244,21 @@ body{
     <div class="profile-scroll" id="profileForm"></div>
   </div>
 
-  <!-- ⑥ MYPAGE -->
+  <!-- ⑥ MYPAGE (プロフィール設定画面に変更) -->
   <div class="panel" data-panel="mypage">
     <div class="appbar">
-      <div class="appname">プロフィール</div>
+      <div class="appname">プロフィール設定</div>
     </div>
-    <div class="profile-scroll" style="align-items:center; text-align:center; padding-top:60px;">
-      <div class="avatar" style="width:80px; height:80px; font-size:32px; margin:0 auto 16px; background:var(--chip); color:var(--ink-soft);">👤</div>
-      <div style="font-size:18px; font-weight:600; margin-bottom:8px;">あなたのプロフィール</div>
-      <p style="color:var(--ink-soft); font-size:13.5px; line-height:1.6;">ここは過去の投稿を管理したり、<br>自分の情報を編集する画面です。</p>
-      <p style="font-size:11px; color:var(--ink-faint); margin-top:24px;">※プロトタイプにつき準備中</p>
+    <div class="profile-scroll">
+      <div style="text-align:center; margin-bottom:12px;">
+        <div class="avatar" style="width:72px; height:72px; font-size:28px; margin:0 auto 10px; background:var(--chip); color:var(--ink-soft);" id="myAvatarDisplay">👤</div>
+        <div style="font-size:12.5px; color:var(--ink-soft); line-height:1.5;">ここで設定した情報が、<br>新規投稿のときに自動で反映されます。</div>
+      </div>
+      <div class="field"><label>お名前</label><input id="my-name" placeholder="例: 佐藤さん"></div>
+      <div class="field"><label>肩書き / 役割</label><input id="my-title" placeholder="例: フロントエンドエンジニア"></div>
+      <div class="field"><label>得意領域 / スキル</label><textarea id="my-summary" rows="2" placeholder="例: Webサイト制作が得意です"></textarea></div>
+      <div class="field"><label>実績など</label><input id="my-achievement" placeholder="例: ポートフォリオサイトを公開中"></div>
+      <button class="save-btn" id="saveMyProfileBtn">プロフィールを保存</button>
     </div>
     
     <div class="bottomnav">
@@ -268,8 +271,9 @@ body{
 </div>
 
 <script type="module">
+  // 変更点1: 新しく「set」をインポートに追加しました
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+  import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBgjBb7jgLQLHfcgDSl2UwT549Kfz7F8Nk",
@@ -284,7 +288,6 @@ body{
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  // あなた専用のIDをブラウザに記憶させる（ログインの代わり）
   let myUserId = localStorage.getItem('musubi_user_id');
   if(!myUserId) {
     myUserId = 'user_' + Date.now();
@@ -294,10 +297,58 @@ body{
   let IDEAS = [];
   let TECHS = [];
   let CHATS = {}; 
+  let myProfile = {}; // 変更点2: 自分のプロフィール情報を保持する変数を追加
+  
   let currentLane = 'idea';
   let currentPlane = 'idea';
-  let currentChatRoomId = null; // 今開いているチャットルームのID
+  let currentChatRoomId = null; 
   let unsubscribeChat = null; 
+
+  // --- データベースから自分のプロフィールを読み込む ---
+  onValue(ref(db, `musubi/users/${myUserId}`), (snapshot) => {
+    if (snapshot.exists()) {
+      myProfile = snapshot.val();
+      
+      // マイページの入力欄に反映
+      document.getElementById('my-name').value = myProfile.name || '';
+      document.getElementById('my-title').value = myProfile.title || '';
+      document.getElementById('my-summary').value = myProfile.summary || '';
+      document.getElementById('my-achievement').value = myProfile.achievement || '';
+      
+      // アバターの見た目を更新
+      const avatarDiv = document.getElementById('myAvatarDisplay');
+      avatarDiv.textContent = myProfile.name ? myProfile.name.charAt(0).toUpperCase() : '👤';
+      avatarDiv.style.background = 'var(--cta)';
+      avatarDiv.style.color = '#fff';
+      
+      // もし新規投稿画面を開いていたら、そちらも再描画して最新状態を反映
+      if (document.querySelector('.panel[data-panel="post"]').classList.contains('active')) {
+        renderProfileForm();
+      }
+    }
+  });
+
+  // --- プロフィールを保存する機能 ---
+  document.getElementById('saveMyProfileBtn').addEventListener('click', async () => {
+    const name = document.getElementById('my-name').value.trim();
+    const title = document.getElementById('my-title').value.trim();
+    const summary = document.getElementById('my-summary').value.trim();
+    const achievement = document.getElementById('my-achievement').value.trim();
+
+    if(!name) { alert("お名前は入力必須です。"); return; }
+
+    try {
+      // ユーザー専用のフォルダにデータを上書き保存(set)
+      await set(ref(db, `musubi/users/${myUserId}`), {
+        name, title, summary, achievement,
+        updatedAt: Date.now()
+      });
+      alert('プロフィールを保存しました！\n（新規投稿時に自動で入力されます）');
+    } catch (error) {
+      console.error("保存失敗", error);
+      alert('エラーが発生しました。');
+    }
+  });
 
   onValue(ref(db, 'musubi/ideas'), (snapshot) => {
     IDEAS = [];
@@ -328,6 +379,7 @@ body{
     document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
     document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
     if(name === 'messages') renderMessageList();
+    if(name === 'post') renderProfileForm(); // 投稿画面を開く時にプロフィールを反映
   }
 
   function renderCards(){
@@ -352,8 +404,6 @@ body{
     const item = [...IDEAS, ...TECHS].find(x => x.id === id);
     if(!item) return;
     const laneLabel = item.lane === 'idea' ? 'アイデア枠' : '技術枠';
-    
-    // 自分が投稿したものかどうかを判定
     const isMine = (item.authorId === myUserId);
     
     let actionButtons = '';
@@ -412,61 +462,51 @@ body{
         }
       });
     } else {
-      // 相手の投稿なら、自分のIDを使ってチャットを開く
       document.getElementById('toChatBtn').addEventListener('click', () => openChat(item, myUserId, item.name + 'さん'));
     }
 
     showScreen('detail');
   }
 
-  // メッセージ一覧の表示機能
   function renderMessageList(){
     const listDiv = document.getElementById('messageList');
     const allItems = [...IDEAS, ...TECHS];
     listDiv.innerHTML = ''; 
-
     let hasChats = false;
 
-    // データベース上のすべてのチャットルームを確認
     for (const roomId in CHATS) {
       const roomData = CHATS[roomId];
-      
-      // ルームIDは「投稿ID_応募者ID」という形になっています
       const parts = roomId.split('_');
-      if (parts.length < 2) continue; // 古い形式のデータは無視
+      if (parts.length < 2) continue; 
       const postId = parts[0];
-      const visitorId = parts.slice(1).join('_'); // 応募者のID
+      const visitorId = parts.slice(1).join('_'); 
       
       const targetItem = allItems.find(x => x.id === postId);
       
       if(targetItem) {
-        // 自分が投稿主か、自分が応募者かを確認
         let isMyPost = (targetItem.authorId === myUserId);
         let isMyInquiry = (visitorId === myUserId);
 
-        // 自分に関係あるチャットだけを表示
         if (isMyPost || isMyInquiry) {
           hasChats = true;
           const messages = Object.values(roomData);
-          const lastMsg = messages[messages.length - 1]; // 最後のメッセージを取得
+          const lastMsg = messages[messages.length - 1]; 
 
           let displayTitle = '';
           let chatPartnerName = '';
           let avatarText = '';
           
           if (isMyPost) {
-            // 自分に届いたメッセージ
             displayTitle = `📥 あなたの投稿「${targetItem.title}」へ`;
             chatPartnerName = `応募者（...${visitorId.slice(-4)}）さん`; 
             avatarText = '✉️';
           } else {
-            // 自分が送ったメッセージ
             displayTitle = `送信済：${targetItem.name}さん`;
             chatPartnerName = `${targetItem.name}さん`;
             avatarText = targetItem.initial || '?';
           }
 
-          const isUnread = lastMsg.senderId !== myUserId; // 最後の発言が相手なら未読っぽく太字にする
+          const isUnread = lastMsg.senderId !== myUserId; 
 
           const btn = document.createElement('button');
           btn.className = 'card';
@@ -481,7 +521,6 @@ body{
             </div>
           `;
           
-          // タップしたらその個別チャットルームを開く
           btn.addEventListener('click', () => openChat(targetItem, visitorId, chatPartnerName));
           listDiv.appendChild(btn);
         }
@@ -493,11 +532,9 @@ body{
     }
   }
 
-  // チャット画面を開く機能
   function openChat(item, visitorId, partnerName){
     if(!item) return;
     
-    // 今回使うチャットルームのIDを決定（投稿ID + 応募者ID）
     currentChatRoomId = item.id + '_' + visitorId;
     document.getElementById('chatName').textContent = partnerName;
     
@@ -511,7 +548,6 @@ body{
       snapshot.forEach((child) => {
         const data = child.val();
         const div = document.createElement('div');
-        // 自分が送ったメッセージなら右側（me）、相手なら左側（them）
         if (data.senderId === myUserId) {
           div.className = 'bubble me';
         } else {
@@ -534,7 +570,6 @@ body{
     const text = input.value.trim();
     if(!text || !currentChatRoomId) return;
     
-    // 決定されたチャットルームに対してメッセージを送信
     push(ref(db, `musubi/chats/${currentChatRoomId}`), {
       text: text,
       senderId: myUserId,
@@ -544,26 +579,33 @@ body{
     input.value = ''; 
   }
 
+  // --- 変更点3: 新規投稿画面にプロフィールを初期反映させる ---
   function renderProfileForm(){
+    // 保存されているプロフィールがあれば、それを初期値（value）に設定する
+    const defaultName = myProfile.name || "";
+    const defaultTitle = myProfile.title || "";
+    const defaultSummary = myProfile.summary || "";
+    const defaultAchievement = myProfile.achievement || "";
+
     if(currentPlane === 'idea'){
       document.getElementById('profileForm').innerHTML = `
-        <div class="field"><label>お名前</label><input id="pf-name" placeholder="例: 佐藤さん"></div>
-        <div class="field"><label>プロジェクト名 / タイトル</label><input id="pf-title" placeholder="例: サステナブル文具プロジェクト"></div>
+        <div class="field"><label>お名前</label><input id="pf-name" value="${defaultName}" placeholder="例: 佐藤さん"></div>
+        <div class="field"><label>プロジェクト名 / タイトル</label><input id="pf-title" value="${defaultTitle}" placeholder="例: サステナブル文具プロジェクト"></div>
         <div class="field"><label>ざっくりしたアイデア</label>
           <textarea id="pf-summary" rows="2" placeholder="例: 使い切ったら植物になる、サステナブルな鉛筆"></textarea></div>
         <div class="field"><label>作りたいもの（詳しく）</label>
           <textarea id="pf-detail" rows="3" placeholder="まずは小ロットで試作し、学内販売から始めたい。"></textarea></div>
-        <div class="field"><label>アプリ内実績</label><input id="pf-achievement" placeholder="例: ハッカソン出場経験あり 等"></div>
+        <div class="field"><label>アプリ内実績</label><input id="pf-achievement" value="${defaultAchievement}" placeholder="例: ハッカソン出場経験あり 等"></div>
         <button class="save-btn" id="saveProfileBtn">投稿する</button>`;
     } else {
       document.getElementById('profileForm').innerHTML = `
-        <div class="field"><label>お名前</label><input id="pf-name" placeholder="例: 鈴木さん"></div>
-        <div class="field"><label>できる役割 / タイトル</label><input id="pf-title" placeholder="例: フロントエンド開発"></div>
+        <div class="field"><label>お名前</label><input id="pf-name" value="${defaultName}" placeholder="例: 鈴木さん"></div>
+        <div class="field"><label>できる役割 / タイトル</label><input id="pf-title" value="${defaultTitle}" placeholder="例: フロントエンド開発"></div>
         <div class="field"><label>得意領域</label>
-          <textarea id="pf-summary" rows="2" placeholder="例: React / Next.js でのアプリ開発が得意"></textarea></div>
+          <textarea id="pf-summary" rows="2" placeholder="例: React / Next.js でのアプリ開発が得意">${defaultSummary}</textarea></div>
         <div class="field"><label>使用できる技術領域</label>
           <textarea id="pf-detail" rows="2" placeholder="例: React, TypeScript, Figma"></textarea></div>
-        <div class="field"><label>アプリ内実績</label><input id="pf-achievement" placeholder="例: 個人のアプリを3本リリース済み 等"></div>
+        <div class="field"><label>アプリ内実績</label><input id="pf-achievement" value="${defaultAchievement}" placeholder="例: 個人のアプリを3本リリース済み 等"></div>
         <button class="save-btn" id="saveProfileBtn">投稿する</button>`;
     }
     
@@ -586,7 +628,6 @@ body{
         summary: summary,
         detail: detail,
         achievement: achievement,
-        // ここが重要！誰が投稿したかを記録する
         authorId: myUserId, 
         timestamp: Date.now()
       };
@@ -598,13 +639,6 @@ body{
           await push(ref(db, 'musubi/techs'), data);
         }
         alert('投稿が完了しました！');
-        
-        document.getElementById('pf-name').value = '';
-        document.getElementById('pf-title').value = '';
-        document.getElementById('pf-summary').value = '';
-        document.getElementById('pf-detail').value = '';
-        document.getElementById('pf-achievement').value = '';
-
         showScreen('home');
       } catch (error) {
         console.error("保存失敗", error);
